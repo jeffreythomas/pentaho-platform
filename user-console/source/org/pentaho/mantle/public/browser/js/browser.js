@@ -100,8 +100,8 @@ pen.define([
                 openFileHandler: myself.openFileHandler,
                 showHiddenFiles: myself.showHiddenFiles,
                 showDescriptions: myself.showDescriptions,
-				        canDownload: myself.canDownload,
-			          canPublish: myself.canPublish,
+				canDownload: myself.canDownload,
+			    canPublish: myself.canPublish,
                 startFolder: initialPath
             });
             myself.FileBrowserView = new FileBrowserView({
@@ -255,8 +255,28 @@ pen.define([
             this.set("clickedFile",clickedFile);
 			fileButtons.canDownload(this.get("canDownload"));
 
-        },
+            var filePath=clickedFile.obj.attr("path");
+            filePath=filePath.replace(/\//g, ":");
 
+            //Ajax request to check write permissions
+            $.ajax({
+                url:  '/pentaho/api/repo/files/' + filePath + '/canAccessMap',
+                type: "GET",
+                //headers: {'accept', 'application/json'},
+                beforeSend: function (request)
+                    {
+                        request.setRequestHeader('accept', 'application/json');
+                    },
+                data:{"permissions":"1|2"}, //check write and delete permissions for the given file
+                async: true,
+                success: function(response){
+                    fileButtons.updateFilePermissionButtons(response);
+                },
+                error: function(response){
+                    fileButtons.updateFilePermissionButtons(false);
+                }
+            });
+        },
 
         updateFolderLastClick: function(){
             this.set("lastClick", "folder");
